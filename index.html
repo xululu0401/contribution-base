@@ -792,8 +792,8 @@
     const d = res.diff;
     $('baseTag').textContent = '按 ' + fmt(res.bases.declared) + ' 元 缴';
     // 方向：d.* 都是「足额 − 申报」，站在「按申报基数缴」这一侧的体验要取反
-    const cashGain = -d.takeHome;
-    const acctLoss = -d.toAcct;
+    const cashGain = -d.takeHome;   // 申报基数低 → 现金多拿
+    const acctLoss = d.toAcct;      // d.toAcct = 足额 − 申报 > 0 → 申报路的账户更少
     const shortTxt = cashGain > 0 ? '每月多拿 ' + fmt(cashGain) + ' 元现金' : (cashGain < 0 ? '每月少拿 ' + fmt(-cashGain) + ' 元现金' : '到手不变');
     const acctTxt = acctLoss > 0 ? '个人账户里每月少 ' + fmt(acctLoss) + ' 元' : (acctLoss < 0 ? '个人账户里每月多 ' + fmt(-acctLoss) + ' 元' : '个人账户不受影响');
     $('headline').innerHTML = '按申报基数 <b>' + fmt(res.bases.declared) + ' 元</b> 缴，而不是按足额 <b>' + fmt(res.bases.full) + ' 元</b> 缴：' +
