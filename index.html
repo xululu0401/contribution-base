@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>缴费基数对账台 · 按低基数缴，你到底亏在哪</title>
+<meta name="description" content="把「公司按低基数缴社保公积金」拆成五笔钱：本月到手、进你个人账户、进统筹、公司成本，以及长期累积与反推。金额与费率全部自己填，页面不联网。">
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#fff; --ink:#16202c; --ink2:#4a5a6e; --ink3:#7d8b9c;
+    --line:#e2e8f0; --line2:#cbd5e1; --brand:#1d4ed8; --brand2:#eef2ff;
+    --good:#0f7b52; --goodbg:#e8f6ef; --warn:#9a5b00; --warnbg:#fff5e5; --bad:#b42318; --badbg:#fdeceb;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .app{max-width:1240px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:392px minmax(0,1fr);gap:18px;align-items:start}
+  .app > *{min-width:0}
+  header.top{grid-column:1/-1;padding:4px 2px 0}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);max-width:820px}
+  .badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h3{margin:16px 0 8px;font-size:14px;color:var(--ink2)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--brand2);color:var(--brand);border:1px solid #dbe4ff}
+  .tag.gray{background:#f1f5f9;color:var(--ink2);border-color:var(--line2)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-size:14px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #c7d2fe;border-color:var(--brand)}
+  input.bad{border-color:var(--bad);background:var(--badbg)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg label{font-size:13px;padding:6px 10px;border:1px solid var(--line2);border-radius:999px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .seg input{margin:0}
+  .seg label.on{background:var(--brand2);border-color:#c7d2fe;color:var(--brand);font-weight:600}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:#f8fafc}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  button.primary:hover{background:#1a45c0}
+  button.tiny{font-size:12px;padding:4px 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .footnote{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--ink2);font-weight:600;background:#fafbfd;text-align:right;font-size:12px}
+  th:first-child,td:first-child{text-align:left;white-space:normal}
+  table.calc th:nth-child(2),table.calc td:nth-child(2){text-align:left;white-space:normal;color:var(--ink3);font-size:12px}
+  tr.sum td{font-weight:700;background:#f8fafc}
+  tr.diff td{color:var(--brand);font-weight:700}
+  .tw{overflow-x:auto;max-width:100%}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .kpi{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+  .kpi .k{font-size:12px;color:var(--ink2);margin-bottom:2px}
+  .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.2px}
+  .kpi .s{font-size:11px;color:var(--ink3)}
+  .headline{font-size:17px;line-height:1.75;background:var(--brand2);border:1px solid #dbe4ff;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+  .headline b{color:var(--brand)}
+  .insight{margin-top:12px;background:var(--goodbg);border:1px solid #bfe6d5;border-radius:10px;padding:11px 13px;font-size:14px}
+  .insight b{color:var(--good)}
+  .warnbox{background:var(--warnbg);border:1px solid #f2d9a8;color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+  .errbox{background:var(--badbg);border:1px solid #f5c6c2;color:var(--bad);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+  .errbox ul,.warnbox ul{margin:6px 0 0;padding-left:18px}
+  .okbox{background:var(--goodbg);border:1px solid #bfe6d5;color:var(--good);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:10px}
+  .checks{list-style:none;margin:0;padding:0;font-size:13px}
+  .checks li{padding:5px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px;align-items:flex-start}
+  .checks .mark{flex:0 0 auto;font-weight:700}
+  .checks .ok{color:var(--good)}
+  .checks .no{color:var(--bad)}
+  .checks .d{color:var(--ink3);font-size:12px}
+  .limits{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
+  .limits li{margin-bottom:6px}
+  .steps{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
+  .steps li{margin-bottom:6px}
+  .rowline{display:grid;grid-template-columns:1.1fr repeat(4,1fr) auto;gap:6px;align-items:center;margin-bottom:6px}
+  .rowline input{font-size:13px;padding:6px 8px}
+  .rowline .cell{display:block;min-width:0}
+  .rowline .lb{display:none}
+  .rowhead{display:grid;grid-template-columns:1.1fr repeat(4,1fr) auto;gap:6px;font-size:11px;color:var(--ink3);margin-bottom:4px}
+  .rowhead div{text-align:center}
+  .rowhead div:first-child{text-align:left}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#16202c;color:#fff;font-size:13px;padding:9px 15px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .18s}
+  .toast.on{opacity:.94}
+  .chart{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:6px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+  .mono{font-variant-numeric:tabular-nums}
+  @media (max-width:980px){
+    .app{grid-template-columns:minmax(0,1fr);padding:16px 12px 50px}
+    h1{font-size:22px}
+  }
+  @media (max-width:620px){
+    .row2{grid-template-columns:minmax(0,1fr)}
+    .kpis{grid-template-columns:minmax(0,1fr)}
+    .rowline{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-auto-rows:auto;border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:10px}
+    .rowline .cell.name{grid-column:1/-1}
+    .rowline .lb{display:block;font-size:11px;color:var(--ink3);margin-bottom:2px}
+    .rowline button{justify-self:start}
+    .rowhead{display:none}
+    .kpi .v{font-size:18px}
+    .card{padding:14px 12px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>缴费基数对账台</h1>
+    <p class="lede">公司按「最低基数」缴社保公积金，你当月到手是多了还是少了？把一个月工资填进去，看这五笔钱：本月到手、进你个人账户的钱、进统筹的钱、公司为你掏的钱，以及 20 年后账户里差多少。</p>
+    <div class="badges">
+      <span class="badge">不联网 · 不上传</span>
+      <span class="badge">金额与费率全部自己填</span>
+      <span class="badge">默认值是虚构示例，不是任何地区政策</span>
+      <span class="badge">不做合规判断 · 不给维权建议</span>
+    </div>
+  </header>
+
+  <form class="card" id="form" autocomplete="off">
+    <h2>① 填你的口径<span class="tag gray">元 / %</span></h2>
+
+    <div class="row2">
+      <div class="field"><label>月工资（应发）<span class="sub">元</span></label><input type="text" id="wage" inputmode="decimal"></div>
+      <div class="field"><label>公司申报的缴费基数<span class="sub">元</span></label><input type="text" id="base" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>基数下限<span class="sub">元</span></label><input type="text" id="floor" inputmode="decimal"></div>
+      <div class="field"><label>基数上限<span class="sub">元</span></label><input type="text" id="cap" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>公积金 个人比例<span class="sub">%</span></label><input type="text" id="fundEmp" inputmode="decimal"></div>
+      <div class="field"><label>公积金 公司比例<span class="sub">%</span></label><input type="text" id="fundCo" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>累积年限<span class="sub">1–40 年</span></label><input type="text" id="years" inputmode="numeric"></div>
+      <div class="field"><label>个人账户年化记账利率<span class="sub">%</span></label><input type="text" id="rate" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label>反推目标：N 年后个人账户想多出多少<span class="sub">元</span></label><input type="text" id="target" inputmode="decimal"></div>
+
+    <h3>险种与费率 <span class="sub" style="font-weight:400;color:var(--ink3)">「计入个人账户」＝这笔缴费有多少比例进你自己的账户，余额进统筹</span></h3>
+    <div class="rowhead"><div>险种</div><div>个人%</div><div>公司%</div><div>个人计入%</div><div>公司计入%</div><div></div></div>
+    <div id="rows"></div>
+    <div class="btns">
+      <button type="button" class="tiny" id="btnAddRow">+ 添加一行</button>
+      <span class="footnote" id="rowNote" style="margin:0"></span>
+    </div>
+
+    <h3>操作</h3>
+    <div class="field"><label>内置场景（全部为虚构示例）</label><select id="scenario"></select></div>
+    <div class="btns">
+      <button type="button" class="primary" id="btnReset">恢复默认</button>
+      <button type="button" id="btnSave">保存到本机</button>
+      <button type="button" id="btnLoad">读取上次</button>
+    </div>
+    <div class="footnote" id="saveState">本机保存只存在这个浏览器里，不会上传。页面不联网。</div>
+  </form>
+
+  <main>
+    <div id="errors"></div>
+
+    <section class="card" id="resHeadline">
+      <h2>② 结论<span class="tag" id="baseTag">按 4000 缴</span></h2>
+      <div class="headline" id="headline"></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="insight" id="insight"></div>
+      <div class="btns" style="margin-top:12px" id="actions"></div>
+    </section>
+
+    <section class="card">
+      <h2>③ 五笔钱<span class="tag gray">每月</span></h2>
+      <div class="tw"><table id="splitTable"></table></div>
+      <div class="footnote">「进你个人账户」＝ 养老与医保的个人缴费按计入比例进个人账户的部分 ＋ 公司缴费按计入比例进个人账户的部分 ＋ 公积金双边全额。余额进统筹，不进你的个人账户。</div>
+    </section>
+
+    <section class="card">
+      <h2>④ 两条路对照<span class="tag gray">足额缴 vs 申报基数</span></h2>
+      <div class="tw"><table id="pathTable"></table></div>
+      <div class="footnote" id="pathNote"></div>
+    </section>
+
+    <section class="card">
+      <h2>⑤ 每多缴 100 元基数<span class="tag">边际账</span></h2>
+      <div class="kpis" id="perKpis"></div>
+      <div class="insight" id="perInsight"></div>
+      <div class="footnote">边际账是解析值：把每个险种的费率与计入比例加起来，不依赖上面的基数大小。因此它不受四舍五入影响，可以和明细表互相印证。</div>
+    </section>
+
+    <section class="card">
+      <h2>⑥ 长期累积<span class="tag gray" id="longTag"></span></h2>
+      <div class="kpis" id="longKpis"></div>
+      <svg class="chart" id="chart" viewBox="0 0 720 260" role="img" aria-label="两条路的个人账户累积曲线"></svg>
+      <div class="legend"><span><i style="background:#1d4ed8"></i>足额缴</span><span><i style="background:#94a3b8"></i>按申报基数缴</span></div>
+      <div class="tw" style="margin-top:12px;max-height:320px;overflow-y:auto"><table id="yearTable"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>⑦ 反推<span class="tag gray">要提多少基数</span></h2>
+      <div id="targetBox"></div>
+    </section>
+
+    <section class="card">
+      <h2>⑧ 敏感性<span class="tag gray">每行都完整重算</span></h2>
+      <div class="tw"><table id="sensTable"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>⑨ 计算步骤</h2>
+      <ol class="steps" id="steps"></ol>
+    </section>
+
+    <section class="card">
+      <h2>⑩ 结构自检<span class="tag gray">每次重算都跑</span></h2>
+      <ul class="checks" id="checks"></ul>
+    </section>
+
+    <section class="card">
+      <h2>⑪ 这份账不算什么</h2>
+      <ul class="limits" id="limits"></ul>
+    </section>
+
+    <section class="card">
+      <h2>⑫ 导出</h2>
+      <div class="btns">
+        <button type="button" class="primary" id="btnCsv">CSV</button>
+        <button type="button" id="btnMd">Markdown</button>
+        <button type="button" id="btnJson">JSON 备份</button>
+        <button type="button" id="btnPng">结果卡 PNG</button>
+        <button type="button" id="btnPrint">打印</button>
+      </div>
+      <div class="footnote">CSV / Markdown / 结果卡 PNG 是给人看的；JSON 备份可以再用下面的「选择文件」导入回来，输入与锚点会一起恢复。导出的每个数字都来自同一次已验算的结果。</div>
+      <div class="btns" style="margin-top:10px">
+        <input type="file" id="importFile" accept=".json,application/json" style="font-size:12px">
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* 缴费基数对账台（contribution-base）· 核心计算层
+ * 纯函数、无 DOM、无网络、不读时钟。
+ * 口径：金额一律用整数「分」；费率/比例一律用「基点 bp」（1% = 100 bp，即万分位）。
+ * 全部金额与费率都用整数运算（parse 阶段逐字符转整数），不用 parseFloat，
+ * 以便与测试里的 BigInt 精确实现逐分对拍。
+ * window.AppCore（浏览器）/ module.exports（Node 测试）
+ */
+'use strict';
+(function (root) {
+  const MAX_ROWS = 8;
+  const MAX_YEARS = 40;
+  const MAX_RATE_PCT = 20;      // 年化记账利率上限（%）
+  const MAX_AMOUNT_CENTS = 1e12; // 单笔金额上限 100 亿元
+
+  /* ── 默认输入：全部为虚构示例，不是任何地区/年份的真实政策数值 ── */
+  const defaults = {
+    wage: '12000',   // 月工资（应发）元
+    base: '4000',    // 公司申报的缴费基数 元
+    floor: '4000',   // 缴费基数下限 元
+    cap: '35000',    // 缴费基数上限 元
+    fundEmp: '12',   // 公积金 个人比例 %
+    fundCo: '12',    // 公积金 公司比例 %
+    years: '20',     // 累积年限
+    rate: '0',       // 个人账户年化记账利率 %
+    target: '300000',// 反推目标：N 年后个人账户想多出多少元
+    rows: [
+      { name: '养老保险', rp: '8', rc: '16', ap: '100', ac: '0' },
+      { name: '医疗保险', rp: '2', rc: '8', ap: '100', ac: '0' },
+      { name: '失业保险', rp: '0.5', rc: '0.5', ap: '0', ac: '0' },
+      { name: '工伤保险', rp: '0', rc: '0.2', ap: '0', ac: '0' },
+      { name: '生育保险', rp: '0', rc: '0.8', ap: '0', ac: '0' }
+    ]
+  };
+
+  /* ── 内置场景（全部虚构示例） ── */
+  const scenarios = [
+    { key: 'default', label: '默认：月薪 1.2 万 / 按 4000 缴 / 20 年', patch: {} },
+    { key: 'full', label: '足额缴对照：基数 = 月薪 12000', patch: { base: '12000' } },
+    { key: 'capped', label: '顶格：月薪 6 万 / 申报 45000（被上限 35000 截断）', patch: { wage: '60000', base: '45000', cap: '35000', floor: '4000', target: '300000' } },
+    { key: 'fund5', label: '公积金按 5% 缴（下限比例）', patch: { fundEmp: '5', fundCo: '5' } },
+    { key: 'growth', label: '20 年 + 年化 3% 记账利率', patch: { rate: '3' } },
+    { key: 'long', label: '35 年长跑：月薪 2 万 / 按 6000 缴', patch: { wage: '20000', base: '6000', years: '35', target: '300000' } },
+    { key: 'lowwage', label: '月薪 3500（低于下限 4000）', patch: { wage: '3500', base: '4000', target: '300000' } }
+  ];
+
+  /* ── 整数工具 ───────────────────────────────────────── */
+
+  // 四舍五入到整数（half-up，全部为非负整数输入）
+  function roundDiv(n, d) {
+    const q = Math.floor(n / d);
+    const rem = n - q * d;
+    return rem * 2 >= d ? q + 1 : q;
+  }
+
+  const FULL2HALF = { '０': '0', '１': '1', '２': '2', '３': '3', '４': '4', '５': '5', '６': '6', '７': '7', '８': '8', '９': '9', '．': '.', '，': ',', '　': ' ' };
+
+  function toHalf(s) {
+    return String(s == null ? '' : s).replace(/[０-９．，　]/g, (c) => FULL2HALF[c]);
+  }
+
+  // 金额 → 整数分。支持 ￥/¥/元、千分位逗号、全角数字、万/亿 后缀；最多两位小数。
+  function parseAmount(input) {
+    let s = toHalf(input).trim();
+    if (!s) return { ok: false, err: '金额不能为空' };
+    s = s.replace(/[￥¥\s元]/g, '').replace(/,/g, '');
+    let mult = 1n;
+    if (/[万萬]$/.test(s)) { mult = 10000n; s = s.slice(0, -1); }
+    else if (/亿$/.test(s)) { mult = 100000000n; s = s.slice(0, -1); }
+    if (s === '') return { ok: false, err: '金额格式无法识别' };
+    if (!/^\d*(\.\d*)?$/.test(s)) return { ok: false, err: '金额只能是数字（可带两位小数）' };
+    const parts = s.split('.');
+    const intPart = parts[0] === '' ? '0' : parts[0];
+    const decPart = parts[1] === undefined ? '' : parts[1];
+    if (decPart.length > 2) return { ok: false, err: '金额最多两位小数' };
+    const centsStr = intPart + (decPart + '00').slice(0, 2);
+    let cents = BigInt(centsStr) * mult;
+    if (cents > BigInt(MAX_AMOUNT_CENTS)) return { ok: false, err: '金额超出本页上限（100 亿元）' };
+    return { ok: true, cents: Number(cents) };
+  }
+
+  // 比例（%）→ 基点。0–maxPct，最多两位小数。
+  function parseRate(input, maxPct) {
+    let s = toHalf(input).trim().replace(/[%％\s]/g, '');
+    if (!s) return { ok: false, err: '比例不能为空' };
+    if (!/^\d*(\.\d*)?$/.test(s)) return { ok: false, err: '比例只能是数字（可带两位小数）' };
+    const parts = s.split('.');
+    const intPart = parts[0] === '' ? '0' : parts[0];
+    const decPart = parts[1] === undefined ? '' : parts[1];
+    if (decPart.length > 2) return { ok: false, err: '比例最多两位小数' };
+    const bp = Number(intPart + (decPart + '00').slice(0, 2));
+    const max = (maxPct === undefined ? 100 : maxPct) * 100;
+    if (bp > max) return { ok: false, err: '比例不能超过 ' + (max / 100) + '%' };
+    return { ok: true, bp };
+  }
+
+  function parseIntStrict(input, min, max, label) {
+    const s = toHalf(input).trim().replace(/,/g, '');
+    if (!/^\d+$/.test(s)) return { ok: false, err: label + '只能是整数' };
+    const v = Number(s);
+    if (v < min || v > max) return { ok: false, err: label + '应在 ' + min + '–' + max + ' 之间' };
+    return { ok: true, v };
+  }
+
+  /* ── 输入归一化 ─────────────────────────────────────── */
+  function normalize(input) {
+    const raw = Object.assign({}, defaults, input || {});
+    const errors = [];
+    const warnings = [];
+    const cfg = { rows: [] };
+    const put = (key, res, label) => { if (!res.ok) errors.push(label + '：' + res.err); else cfg[key] = res.cents; return res.ok; };
+
+    put('wage', parseAmount(raw.wage), '月工资');
+    put('base', parseAmount(raw.base), '申报基数');
+    put('floor', parseAmount(raw.floor), '基数下限');
+    put('cap', parseAmount(raw.cap), '基数上限');
+    put('target', parseAmount(raw.target), '反推目标');
+
+    const fr = parseRate(raw.fundEmp, 100); if (!fr.ok) errors.push('公积金个人比例：' + fr.err); else cfg.fundEmpBp = fr.bp;
+    const fc = parseRate(raw.fundCo, 100); if (!fc.ok) errors.push('公积金公司比例：' + fc.err); else cfg.fundCoBp = fc.bp;
+    const yr = parseIntStrict(raw.years, 1, MAX_YEARS, '累积年限'); if (!yr.ok) errors.push(yr.err); else cfg.years = yr.v;
+    const rt = parseRate(raw.rate, MAX_RATE_PCT); if (!rt.ok) errors.push('记账利率：' + rt.err); else cfg.rateBp = rt.bp;
+
+    const rows = Array.isArray(raw.rows) ? raw.rows : [];
+    if (!rows.length) errors.push('至少要有一个险种行');
+    if (rows.length > MAX_ROWS) errors.push('险种行最多 ' + MAX_ROWS + ' 行');
+    rows.slice(0, MAX_ROWS).forEach((r, i) => {
+      const no = '第 ' + (i + 1) + ' 行';
+      const name = String(r && r.name == null ? '' : r.name).trim();
+      if (!name) errors.push(no + '：险种名称不能为空');
+      if (name.length > 12) errors.push(no + '：险种名称最多 12 个字');
+      const out = { name };
+      let ok = true;
+      [['rp', '个人费率', 100], ['rc', '公司费率', 100], ['ap', '个人缴费计入个人账户比例', 100], ['ac', '公司缴费计入个人账户比例', 100]].forEach(([k, label, max]) => {
+        const p = parseRate(r && r[k], max);
+        if (!p.ok) { errors.push(no + '「' + name + '」' + label + '：' + p.err); ok = false; } else out[k + 'Bp'] = p.bp;
+      });
+      if (ok) cfg.rows.push(out);
+    });
+
+    if (cfg.floor !== undefined && cfg.cap !== undefined && cfg.floor > cfg.cap) {
+      errors.push('基数下限不能大于上限（当前下限 ' + yuan(cfg.floor) + ' 元 > 上限 ' + yuan(cfg.cap) + ' 元）');
+    }
+    if (cfg.base !== undefined && cfg.floor !== undefined && cfg.base < cfg.floor) {
+      warnings.push('申报基数低于下限，计算时已按下限 ' + yuan(cfg.floor) + ' 元 截断。');
+    }
+    if (cfg.base !== undefined && cfg.cap !== undefined && cfg.base > cfg.cap) {
+      warnings.push('申报基数高于上限，计算时已按上限 ' + yuan(cfg.cap) + ' 元 截断。');
+    }
+    if (cfg.wage !== undefined && cfg.floor !== undefined && cfg.wage < cfg.floor) {
+      warnings.push('月工资低于缴费基数下限：足额路会按下限 ' + yuan(cfg.floor) + ' 元 作为基数，此时「扣缴额」可能高于工资本身。');
+    }
+    if (cfg.fundEmpBp !== undefined && (cfg.fundEmpBp > 1200 || cfg.fundCoBp > 1200)) {
+      warnings.push('公积金比例高于 12%（常见上限），本页照你填的比例计算，不做合规判断。');
+    }
+
+    return { ok: errors.length === 0, cfg, errors, warnings };
+  }
+
+  const yuan = (cents) => (cents / 100).toFixed(2);
+
+  /* ── 单条路的逐项计算 ───────────────────────────────── */
+  function path(cfg, baseCents) {
+    const rows = cfg.rows.map((r) => {
+      const personal = roundDiv(baseCents * r.rpBp, 10000);
+      const company = roundDiv(baseCents * r.rcBp, 10000);
+      const pIn = roundDiv(personal * r.apBp, 10000);
+      const cIn = roundDiv(company * r.acBp, 10000);
+      const toAcct = pIn + cIn;
+      return {
+        name: r.name, rpBp: r.rpBp, rcBp: r.rcBp, apBp: r.apBp, acBp: r.acBp,
+        personal, company, personalToAcct: pIn, companyToAcct: cIn,
+        toAcct, toPool: (personal - pIn) + (company - cIn)
+      };
+    });
+    const fundEmp = roundDiv(baseCents * cfg.fundEmpBp, 10000);
+    const fundCo = roundDiv(baseCents * cfg.fundCoBp, 10000);
+    const sum = (f) => rows.reduce((a, r) => a + f(r), 0);
+    const personalIns = sum((r) => r.personal);
+    const companyIns = sum((r) => r.company);
+    const acctIns = sum((r) => r.toAcct);
+    const poolIns = sum((r) => r.toPool);
+    const personalTotal = personalIns + fundEmp;
+    const companyTotal = companyIns + fundCo;
+    const toAcct = acctIns + fundEmp + fundCo;
+    const toPool = poolIns;
+    return {
+      baseCents, rows, fundEmp, fundCo,
+      personalIns, companyIns, acctIns, poolIns,
+      personalTotal, companyTotal, toAcct, toPool,
+      takeHome: cfg.wage - personalTotal,
+      companyCashCost: cfg.wage + companyTotal,
+      checkSum: personalTotal + companyTotal - (toAcct + toPool)   // 恒等于 0
+    };
+  }
+
+  /* ── 长期累积 ───────────────────────────────────────── */
+  function growthFactor(months, ratePct) {
+    const i = ratePct / 100 / 12;
+    if (i === 0) return months;
+    return (Math.pow(1 + i, months) - 1) / i;
+  }
+
+  function futureValue(monthlyCents, months, ratePct) {
+    const i = ratePct / 100 / 12;
+    if (i === 0) return monthlyCents * months;
+    let bal = 0;
+    for (let m = 0; m < months; m++) bal = bal * (1 + i) + monthlyCents;
+    return bal;
+  }
+
+  function schedule(monthlyCents, months, ratePct) {
+    const i = ratePct / 100 / 12;
+    let bal = 0, paid = 0;
+    const out = [];
+    for (let m = 1; m <= months; m++) {
+      bal = bal * (1 + i) + monthlyCents;
+      paid += monthlyCents;
+      if (m % 12 === 0) out.push({ year: m / 12, balance: bal, paid });
+    }
+    return out;
+  }
+
+  /* ── 边际账：每多 100 元基数 ────────────────────────── */
+  function perBase(cfg) {
+    // 解析口径的「每 1 元基数」边际率（以 1e-8 为单位的整数，避免浮点误差）
+    let takeE8 = cfg.fundEmpBp * 10000;      // 个人缴 = 基数 × bp/1e4
+    let coE8 = cfg.fundCoBp * 10000;
+    let acctE8 = (cfg.fundEmpBp + cfg.fundCoBp) * 10000;
+    cfg.rows.forEach((r) => {
+      takeE8 += r.rpBp * 10000;
+      coE8 += r.rcBp * 10000;
+      acctE8 += roundDiv(r.rpBp * r.apBp, 10000) * 10000;
+      acctE8 += roundDiv(r.rcBp * r.acBp, 10000) * 10000;
+    });
+    const per100 = (e8) => (e8 / 1e8) * 100;  // 每 100 元基数的元数
+    return {
+      takePer100: per100(takeE8),
+      acctPer100: per100(acctE8),
+      companyPer100: per100(coE8),
+      netPer100: per100(acctE8 - takeE8),
+      acctFrac: acctE8 / 1e8,      // 每 1 元基数进个人账户的元数
+      takeFrac: takeE8 / 1e8
+    };
+  }
+
+  /* ── 主计算 ─────────────────────────────────────────── */
+  function analyze(cfg) {
+    const declaredBase = Math.min(Math.max(cfg.base, cfg.floor), cfg.cap);
+    const fullBase = Math.min(Math.max(cfg.wage, cfg.floor), cfg.cap);
+    const declared = path(cfg, declaredBase);
+    const full = path(cfg, fullBase);
+    const ratePct = cfg.rateBp / 100;
+    const months = cfg.years * 12;
+
+    const diff = {
+      base: fullBase - declaredBase,
+      takeHome: full.takeHome - declared.takeHome,
+      toAcct: full.toAcct - declared.toAcct,
+      toPool: full.toPool - declared.toPool,
+      companyTotal: full.companyTotal - declared.companyTotal,
+      companyCashCost: full.companyCashCost - declared.companyCashCost
+    };
+
+    const pb = perBase(cfg);
+
+    // 长期累积（申报路 / 足额路）
+    const declaredFV = futureValue(declared.toAcct, months, ratePct);
+    const fullFV = futureValue(full.toAcct, months, ratePct);
+    const schedDeclared = schedule(declared.toAcct, months, ratePct);
+    const schedFull = schedule(full.toAcct, months, ratePct);
+    const perYear = schedDeclared.map((row, i) => ({
+      year: row.year,
+      declaredBalance: row.balance, fullBalance: schedFull[i].balance,
+      declaredPaid: row.paid, fullPaid: schedFull[i].paid
+    }));
+
+    // 反推：让个人账户在 N 年后多出 target，需要把基数提到多少
+    const needMonthly = months > 0 ? cfg.target / growthFactor(months, ratePct) : 0;
+    const needBaseDelta = pb.acctFrac > 0 ? needMonthly / pb.acctFrac : Infinity;
+    // 锚点必须是「截断后的实际申报基数」：申报基数低于下限时，实际缴的是下限，
+    // 从 cfg.base 起算会把解算到下限以下，反推就退化成「一步都不动」。
+    const wantedBase = declaredBase + needBaseDelta;
+    const reachable = Number.isFinite(wantedBase) && wantedBase <= cfg.cap + 1e-9;
+    // 反推三步：解析解 → 牛顿迭代（用实测局部斜率，不用假设的边际率） → ±64 分整数微调。
+    // 这样做是因为账面每一笔都四舍五入到分，「基数 → 账户月增」是一个阶梯函数，
+    // 纯解析解在大基数区间会偏出百分之零点几，放大到几十年就是几百元。
+    const gf = growthFactor(months, ratePct);
+    const evalBase = (b) => {
+      const bb = Math.min(Math.max(b, cfg.floor), cfg.cap);
+      const p = path(cfg, bb);
+      const fv = futureValue(p.toAcct, months, ratePct);
+      return { b: bb, fv, acct: p.toAcct, residual: fv - declaredFV - cfg.target };
+    };
+    let b1 = reachable ? wantedBase : cfg.cap;
+    if (reachable) {
+      for (let it = 0; it < 8; it++) {
+        const cur = evalBase(Math.round(b1));
+        if (Math.abs(cur.residual) <= Math.max(1, gf)) break;
+        const probe = evalBase(Math.round(b1) + 1000);
+        const slope = (probe.acct - cur.acct) * gf / 1000;
+        if (!(slope > 0)) break;
+        const step = -cur.residual / slope;
+        if (!Number.isFinite(step) || Math.abs(step) < 0.5) break;
+        b1 = Math.min(b1 + step, cfg.cap);
+      }
+    }
+    let best = evalBase(Math.round(b1));
+    if (reachable) {
+      const loLimit = cfg.target > 0 ? declaredBase : cfg.floor;
+      const lo = Math.max(loLimit, Math.round(b1) - 64);
+      const hi = Math.min(cfg.cap, Math.round(b1) + 64);
+      for (let b = lo; b <= hi; b++) {
+        const c = evalBase(b);
+        if (Math.abs(c.residual) < Math.abs(best.residual) - 1e-9) best = c;
+      }
+    }
+    const residual = best.residual;
+
+    const target = {
+      targetCents: cfg.target, months, ratePct,
+      neededMonthlyCents: needMonthly,
+      neededBaseCents: reachable ? Math.round(wantedBase) : null,
+      appliedBaseCents: best.b,
+      refinedCents: reachable ? best.b - Math.round(wantedBase) : 0,
+      reachable,
+      cappedAt: cfg.cap,
+      afterAcctPerMonth: best.acct,
+      afterFV: best.fv, residualCents: residual,
+      fullBaseFV: fullFV,
+      fullBaseCovers: fullFV - declaredFV >= cfg.target
+    };
+
+    // 敏感性：每行都完整重算
+    const sens = [];
+    const mk = (label, patch) => {
+      const c2 = Object.assign({}, cfg, patch);
+      const d2 = Math.min(Math.max(c2.base, c2.floor), c2.cap);
+      const f2 = Math.min(Math.max(c2.wage, c2.floor), c2.cap);
+      const p2 = path(c2, d2), q2 = path(c2, f2);
+      const m2 = c2.years * 12, r2 = c2.rateBp / 100;
+      sens.push({
+        label,
+        baseCents: d2,
+        takeHomeDiff: q2.takeHome - p2.takeHome,
+        acctDiffMonthly: q2.toAcct - p2.toAcct,
+        acctDiffFV: futureValue(q2.toAcct, m2, r2) - futureValue(p2.toAcct, m2, r2),
+        companyDiff: q2.companyTotal - p2.companyTotal
+      });
+    };
+    mk('申报基数 = 月工资的一半', { base: Math.round(cfg.wage / 2) });
+    mk('申报基数 +50%', { base: Math.round(cfg.base * 1.5) });
+    mk('申报基数 = 月工资（足额）', { base: cfg.wage });
+    mk('公积金比例 12% → 5%', { fundEmpBp: 500, fundCoBp: 500 });
+    mk('年限 +5 年', { years: Math.min(cfg.years + 5, MAX_YEARS) });
+    mk('记账利率 → 3%', { rateBp: 300 });
+
+    const steps = [
+      '① 两条路的缴费基数：申报 ' + yuan(cfg.base) + ' → 截成 ' + yuan(declaredBase) + ' 元（下限 ' + yuan(cfg.floor) + ' / 上限 ' + yuan(cfg.cap) + '）；足额 ' + yuan(cfg.wage) + ' → 截成 ' + yuan(fullBase) + ' 元。',
+      '② 逐险种按「基数 × 费率」算出个人缴与公司缴（每项四舍五入到分）。',
+      '③ 把每一笔缴费按「计入个人账户比例」拆成两份：进你个人账户的、进统筹的；公积金双边全额进个人账户。',
+      '④ 本月到手 = 月工资 − 个人缴费合计；个人账户月增 = 各险种计入 + 公积金双边。',
+      '⑤ 长期累积 = 每月账户增额按年化 ' + ratePct + '% 按月复利累积 ' + months + ' 个月。',
+      '⑥ 反推：需要的月账户增量 ÷ 每元基数带来的账户增量 = 需要的基数。'
+    ];
+
+    const limits = [
+      '不判断「按低基数缴」是否合规，也不给举报、仲裁或谈判建议；本页只做同一套规则下的算术对照。',
+      '不内置任何地区、任何年份的真实费率与基数上下限。默认值是虚构示例，请按你自己的口径逐项改。',
+      '不计算个人所得税：这里的「到手」指扣掉社保与公积金个人缴费之后的金额，未扣个税。',
+      '不算「退休后每月能领多少养老金」：统筹账户的待遇取决于当地计发规则与社会平均工资，本页只算「钱进不进你的个人账户」。',
+      '医保个人账户的计入规则各地不同，本页用你填的「计入比例」，不替你判断。',
+      '不处理断缴、补缴、滞纳金、历年基数调整、年终奖与股权、多地重复参保、上下限随年份变动。',
+      '记账利率是你自己填的假设，不是任何机构的真实利率；含利率时用按月复利浮点累加，只有利率为 0 时全程是精确整数分。',
+      '「多缴基数对你净增益」是这份规则下的算术结论，不等于建议你去做任何事（公积金能否提取、什么时候提取，取决于你所在地的规则）。'
+    ];
+
+    return {
+      bases: { declared: declaredBase, full: fullBase, declaredClamped: declaredBase !== cfg.base, fullClamped: fullBase !== cfg.wage },
+      cfg, declared, full, diff, perBase: pb, months, ratePct,
+      declaredFV, fullFV, diffFV: fullFV - declaredFV,
+      perYear, target, sensitivity: sens, steps, limits
+    };
+  }
+
+  /* ── 结构自检（每次重算都跑） ───────────────────────── */
+  function verify(cfg, res) {
+    const checks = [];
+    const add = (name, ok, detail) => checks.push({ name, ok: !!ok, detail: detail || '' });
+    const fin = (x) => typeof x === 'number' && Number.isFinite(x);
+    const scan = (o, path, bad) => {
+      if (o === null) { if (path !== 'res.target.neededBaseCents') bad.push(path + ' = null'); return; }
+      if (o === undefined) { bad.push(path + ' = undefined'); return; }
+      if (typeof o === 'number') { if (!Number.isFinite(o)) bad.push(path + ' = ' + o); return; }
+      if (typeof o === 'string' || typeof o === 'boolean') return;
+      if (Array.isArray(o)) { o.forEach((v, i) => scan(v, path + '[' + i + ']', bad)); return; }
+      if (typeof o === 'object') { Object.keys(o).forEach((k) => scan(o[k], path + '.' + k, bad)); }
+    };
+    const bad = [];
+    scan({ declared: res.declared, full: res.full, diff: res.diff, target: res.target, sensitivity: res.sensitivity }, 'res', bad);
+    add('结果对象无 undefined / NaN / Infinity', bad.length === 0, bad.slice(0, 4).join('；'));
+
+    const cons = res.declared.checkSum === 0 && res.full.checkSum === 0;
+    add('归属守恒：个人缴 + 公司缴 = 进个人账户 + 进统筹', cons,
+      '申报路 ' + yuan(res.declared.personalTotal + res.declared.companyTotal) + ' = ' + yuan(res.declared.toAcct + res.declared.toPool) + ' 元');
+
+    const mono = res.diff.base >= 0
+      ? (res.diff.toAcct >= 0 && res.diff.takeHome <= 0 && res.diff.companyTotal >= 0)
+      : (res.diff.toAcct <= 0 && res.diff.takeHome >= 0 && res.diff.companyTotal <= 0);
+    add('单调性：基数越高 → 到手越少、账户越多、公司越贵', mono);
+
+    const round1 = res.declared.rows.every((r) => Math.abs(r.toAcct + r.toPool - (r.personal + r.company)) === 0);
+    add('逐险种分账无零头丢失', round1);
+
+    const perOk = fin(res.perBase.acctPer100) && fin(res.perBase.takePer100) && fin(res.perBase.companyPer100) && fin(res.perBase.netPer100);
+    add('边际账已解析算出（每 100 元基数的到手 / 账户 / 公司成本）', perOk, '到手 −' + res.perBase.takePer100.toFixed(2) + ' 元 / 账户 +' + res.perBase.acctPer100.toFixed(2) + ' 元');
+
+    const exact = res.ratePct === 0 ? Math.abs(res.declaredFV - res.declared.toAcct * res.months) === 0 : true;
+    add('利率为 0 时累积 = 月增 × 月数（精确整数）', exact,
+      res.ratePct === 0 ? yuan(res.declaredFV) + ' = ' + yuan(res.declared.toAcct) + ' × ' + res.months : '含利率，跳过该精确断言');
+
+    const reTol = Math.max(100, Math.ceil(cfg.target * 0.002), res.months * 2);
+    const reOk = !res.target.reachable || Math.abs(res.target.residualCents) <= reTol;
+    add('反推解回代残差在容差内（max(1 元, 目标 0.2%, 月数 × 2 分)）', reOk,
+      '残差 ' + (res.target.residualCents / 100).toFixed(2) + ' 元 / 容差 ' + (reTol / 100).toFixed(2) + ' 元');
+
+    const monotoneSens = res.sensitivity.every((s) => fin(s.acctDiffFV) && fin(s.takeHomeDiff));
+    add('敏感性每一行都完整重算且数值有限', monotoneSens, res.sensitivity.length + ' 行');
+    return checks;
+  }
+
+  const api = { defaults, scenarios, normalize, analyze, verify, path, perBase, parseAmount, parseRate, parseIntStrict, futureValue, schedule, growthFactor, roundDiv, MAX_ROWS, MAX_YEARS, defaultsClone };
+  function defaultsClone() { return JSON.parse(JSON.stringify(defaults)); }
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.AppCore = api;
+})(typeof window !== 'undefined' ? window : null);
+
+</script>
+<script>
+/* 缴费基数对账台（contribution-base）· 界面层
+ * 表单 → AppCore.normalize / analyze / verify → 渲染结论、五笔钱、两条路、边际账、
+ * 长期累积、反推、敏感性、步骤、自检、边界；四种导出（CSV/MD/JSON/PNG）+ 本机保存。
+ * 不联网、不上传、不打印调试日志（控制台保持干净）。
+ */
+'use strict';
+(function () {
+  const C = window.AppCore;
+  const $ = (id) => document.getElementById(id);
+  const STORE_KEY = 'contribution-base-v1';
+  const state = { input: C.defaultsClone(), lastInput: null, prevInput: null, inputKey: null, res: null, cfg: null, checks: [], exportCount: 0 };
+
+  /* ── 工具 ─────────────────────────────────────────── */
+  const fmt = (cents) => (cents / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sgn = (cents) => (cents > 0 ? '+' : cents < 0 ? '−' : '') + fmt(Math.abs(cents));
+  const pct1 = (x) => (Math.round(x * 100) / 100).toFixed(2) + '%';
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove('on'), 1900);
+  }
+
+  /* ── 表单读写 ─────────────────────────────────────── */
+  function readInput() {
+    const rows = [...document.querySelectorAll('#rows .rowline')].map((el) => ({
+      name: el.querySelector('input[data-k=name]').value,
+      rp: el.querySelector('input[data-k=rp]').value,
+      rc: el.querySelector('input[data-k=rc]').value,
+      ap: el.querySelector('input[data-k=ap]').value,
+      ac: el.querySelector('input[data-k=ac]').value
+    }));
+    return {
+      wage: $('wage').value, base: $('base').value, floor: $('floor').value, cap: $('cap').value,
+      fundEmp: $('fundEmp').value, fundCo: $('fundCo').value,
+      years: $('years').value, rate: $('rate').value, target: $('target').value, rows
+    };
+  }
+
+  function writeInput(inp) {
+    $('wage').value = inp.wage; $('base').value = inp.base;
+    $('floor').value = inp.floor; $('cap').value = inp.cap;
+    $('fundEmp').value = inp.fundEmp; $('fundCo').value = inp.fundCo;
+    $('years').value = inp.years; $('rate').value = inp.rate; $('target').value = inp.target;
+    renderRows(inp.rows || []);
+  }
+
+  function renderRows(rows) {
+    const host = $('rows');
+    host.innerHTML = '';
+    rows.forEach((r, i) => {
+      const el = document.createElement('div');
+      el.className = 'rowline';
+      const cells = [['rp', '个人%'], ['rc', '公司%'], ['ap', '个人计入%'], ['ac', '公司计入%']];
+      el.innerHTML = '<label class="cell name"><span class="lb">险种名称</span><input type="text" data-k="name" aria-label="险种名称" value="' + esc(r.name || '') + '"></label>' +
+        cells.map((c) => '<label class="cell"><span class="lb">' + c[1] + '</span><input type="text" inputmode="decimal" data-k="' + c[0] + '" aria-label="' + c[1] + '" value="' + esc(r[c[0]] == null ? '' : r[c[0]]) + '"></label>').join('') +
+        '<button type="button" class="tiny" data-del="' + i + '" title="删除这一行">删</button>';
+      host.appendChild(el);
+    });
+    $('rowNote').textContent = rows.length + ' / ' + C.MAX_ROWS + ' 行';
+  }
+
+  /* ── 计算与渲染 ───────────────────────────────────── */
+  function compute() {
+    const now = readInput();
+    const n = C.normalize(now);
+    const errBox = $('errors');
+    markBad(n);
+    if (!n.ok) {
+      errBox.innerHTML = '<div class="errbox"><b>这些输入还不能算：</b><ul>' + n.errors.map((e) => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
+      return null;
+    }
+    errBox.innerHTML = n.warnings.length
+      ? '<div class="warnbox"><b>注意：</b><ul>' + n.warnings.map((w) => '<li>' + esc(w) + '</li>').join('') + '</ul></div>'
+      : '';
+    const res = C.analyze(n.cfg);
+    const key = JSON.stringify(now);
+    if (state.inputKey !== null && state.inputKey !== key && state.lastInput) state.prevInput = state.lastInput;
+    state.lastInput = now; state.inputKey = key;
+    state.res = res; state.cfg = n.cfg;
+    state.checks = C.verify(n.cfg, res);
+    render(res);
+    return res;
+  }
+
+  function markBad(n) {
+    ['wage', 'base', 'floor', 'cap', 'fundEmp', 'fundCo', 'years', 'rate', 'target'].forEach((id) => $(id).classList.remove('bad'));
+    if (n.ok || !n.errors) return;
+    const map = { '月工资': 'wage', '申报基数': 'base', '基数下限': 'floor', '基数上限': 'cap', '公积金个人比例': 'fundEmp', '公积金公司比例': 'fundCo', '累积年限': 'years', '记账利率': 'rate', '反推目标': 'target' };
+    n.errors.forEach((e) => {
+      Object.keys(map).forEach((k) => { if (e.indexOf(k) === 0) $(map[k]).classList.add('bad'); });
+    });
+  }
+
+  function render(res) {
+    renderHeadline(res); renderSplit(res); renderPaths(res); renderPer(res);
+    renderLong(res); renderTarget(res); renderSens(res); renderSteps(res);
+    renderChecks(); renderLimits(res);
+  }
+
+  function kpiHTML(items) {
+    return items.map((x) => {
+      const s = String(x.v);
+      const px = s.length >= 22 ? 14 : (s.length >= 16 ? 17 : 20);
+      return '<div class="kpi"><div class="k">' + x.k + '</div><div class="v" style="font-size:' + px + 'px">' + x.v + '</div><div class="s">' + x.s + '</div></div>';
+    }).join('');
+  }
+
+  function renderHeadline(res) {
+    const d = res.diff;
+    $('baseTag').textContent = '按 ' + fmt(res.bases.declared) + ' 元 缴';
+    // 方向：d.* 都是「足额 − 申报」，站在「按申报基数缴」这一侧的体验要取反
+    const cashGain = -d.takeHome;
+    const acctLoss = -d.toAcct;
+    const shortTxt = cashGain > 0 ? '每月多拿 ' + fmt(cashGain) + ' 元现金' : (cashGain < 0 ? '每月少拿 ' + fmt(-cashGain) + ' 元现金' : '到手不变');
+    const acctTxt = acctLoss > 0 ? '个人账户里每月少 ' + fmt(acctLoss) + ' 元' : (acctLoss < 0 ? '个人账户里每月多 ' + fmt(-acctLoss) + ' 元' : '个人账户不受影响');
+    $('headline').innerHTML = '按申报基数 <b>' + fmt(res.bases.declared) + ' 元</b> 缴，而不是按足额 <b>' + fmt(res.bases.full) + ' 元</b> 缴：' +
+      '你 <b>' + shortTxt + '</b>，但 <b>' + acctTxt + '</b>；' +
+      '把两条路放到 <b>' + res.months + ' 个月</b>（' + res.cfg.years + ' 年，年化 ' + res.ratePct + '%）上看，个人账户累计相差 <b>' + fmt(Math.abs(res.diffFV)) + ' 元</b>。';
+
+    const kpis = [
+      { k: '本月到手（未扣个税）', v: fmt(res.declared.takeHome) + ' 元', s: '足额缴是 ' + fmt(res.full.takeHome) + ' 元' },
+      { k: '本月进你个人账户', v: fmt(res.declared.toAcct) + ' 元', s: '养老 + 医保计入 + 公积金双边' },
+      { k: '本月进统筹（不归你）', v: fmt(res.declared.toPool) + ' 元', s: '足额缴是 ' + fmt(res.full.toPool) + ' 元' },
+      { k: '公司本月为这笔掏', v: fmt(res.declared.companyTotal) + ' 元', s: '足额缴要多掏 ' + fmt(Math.max(0, d.companyTotal)) + ' 元' }
+    ];
+    $('kpis').innerHTML = kpiHTML(kpis);
+
+    const net = d.toAcct + d.takeHome;   // 站在「足额缴」这一侧：现金少拿、账户多进
+    $('insight').innerHTML = d.base === 0
+      ? '两条路的基数已经一样（都是 <b>' + fmt(res.bases.declared) + ' 元</b>），所以没有任何差额。想看差额，把「公司申报的缴费基数」改小，或者换一个内置场景。'
+      : '换个方向看同一个差：<b>如果你改按足额缴</b>，每月现金 <b>' + sgn(d.takeHome) + ' 元</b>、个人账户 <b>' + sgn(d.toAcct) + ' 元</b>，一个月净 <b>' + sgn(net) + ' 元</b>（' + res.months + ' 个月合计 <b>' + sgn(net * res.months) + ' 元</b>，不含利率）。' +
+        '反过来，<b>每少缴 100 元基数</b>，你这个月到手多 <b>' + res.perBase.takePer100.toFixed(2) + ' 元</b>、个人账户少 <b>' + res.perBase.acctPer100.toFixed(2) + ' 元</b>——手快过账，账快过手。';
+
+    const acts = [
+      { t: '把基数补到足额（' + fmt(res.bases.full) + ' 元）', fn: () => { $('base').value = (res.bases.full / 100).toFixed(2); } },
+      { t: '按反推结果设基数', fn: () => { $('base').value = (res.target.appliedBaseCents / 100).toFixed(2); }, off: !res.target.reachable },
+      { t: '公积金改 12% / 12%', fn: () => { $('fundEmp').value = '12'; $('fundCo').value = '12'; } },
+      { t: '还原上一版输入（可来回切）', fn: () => { if (state.prevInput) writeInput(state.prevInput); }, off: !state.prevInput }
+    ];
+    $('actions').innerHTML = '';
+    acts.forEach((a) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = a.t;
+      if (a.off) b.disabled = true;
+      b.addEventListener('click', () => {
+        a.fn(); compute();
+        toast('已按建议改输入并重算');
+      });
+      $('actions').appendChild(b);
+    });
+  }
+
+  function renderSplit(res) {
+    const p = res.declared;
+    let h = '<thead><tr><th>项目</th><th>个人缴（元）</th><th>公司缴（元）</th><th>进你个人账户（元）</th><th>进统筹（元）</th></tr></thead><tbody>';
+    p.rows.forEach((r) => {
+      h += '<tr><td>' + esc(r.name) + '</td><td>' + fmt(r.personal) + '</td><td>' + fmt(r.company) + '</td><td>' + fmt(r.toAcct) + '</td><td>' + fmt(r.toPool) + '</td></tr>';
+    });
+    h += '<tr><td>住房公积金</td><td>' + fmt(p.fundEmp) + '</td><td>' + fmt(p.fundCo) + '</td><td>' + fmt(p.fundEmp + p.fundCo) + '</td><td>0.00</td></tr>';
+    h += '<tr class="sum"><td>合计</td><td>' + fmt(p.personalTotal) + '</td><td>' + fmt(p.companyTotal) + '</td><td>' + fmt(p.toAcct) + '</td><td>' + fmt(p.toPool) + '</td></tr>';
+    h += '<tr class="sum"><td>本月到手（月工资 − 个人缴合计）</td><td colspan="4">' + fmt(p.takeHome) + ' 元（月工资 ' + fmt(res.cfg.wage) + ' 元）</td></tr>';
+    h += '</tbody>';
+    $('splitTable').innerHTML = h;
+  }
+
+  function renderPaths(res) {
+    const d = res.diff;
+    const rows = [
+      ['缴费基数（已按上下限截断）', res.declared.baseCents, res.full.baseCents],
+      ['个人缴费合计', res.declared.personalTotal, res.full.personalTotal],
+      ['本月到手（未扣个税）', res.declared.takeHome, res.full.takeHome],
+      ['公司缴费合计', res.declared.companyTotal, res.full.companyTotal],
+      ['公司用人现金成本（工资 + 公司缴费）', res.declared.companyCashCost, res.full.companyCashCost],
+      ['本月进你个人账户', res.declared.toAcct, res.full.toAcct],
+      ['本月进统筹', res.declared.toPool, res.full.toPool],
+      ['每 100 元基数进个人账户', res.perBase.acctPer100 * 100, res.perBase.acctPer100 * 100]
+    ];
+    let h = '<thead><tr><th>项目</th><th>按申报基数缴</th><th>足额缴</th><th>差额（足额 − 申报）</th></tr></thead><tbody>';
+    rows.forEach(([label, a, b], i) => {
+      const money = i !== 7;
+      const f = (x) => (money ? fmt(x) : (x / 100).toFixed(2) + ' 元 / 100 元基数');
+      h += '<tr' + (i === 2 || i === 5 ? ' class="diff"' : '') + '><td>' + label + '</td><td>' + f(a) + '</td><td>' + f(b) + '</td><td>' + (money ? sgn(b - a) : '0.00') + '</td></tr>';
+    });
+    h += '</tbody>';
+    $('pathTable').innerHTML = h;
+    const bits = [];
+    if (res.bases.declaredClamped) bits.push('申报基数 ' + fmt(res.cfg.base) + ' 元 已被' + (res.cfg.base > res.cfg.cap ? '上限' : '下限') + '截成 ' + fmt(res.bases.declared) + ' 元');
+    if (res.bases.fullClamped) bits.push('月工资 ' + fmt(res.cfg.wage) + ' 元 已被' + (res.cfg.wage > res.cfg.cap ? '上限' : '下限') + '截成 ' + fmt(res.bases.full) + ' 元');
+    $('pathNote').textContent = (bits.length ? bits.join('；') + '。' : '') +
+      '「足额」这一路用的是月工资本身（再按上下限截断），不代表任何地区认定的应缴口径。';
+  }
+
+  function renderPer(res) {
+    const b = res.perBase;
+    const perList = [
+      { k: '你到手（每 100 元）', v: '−' + b.takePer100.toFixed(2) + ' 元', s: '个人费率合计 ' + pct1(b.takePer100) },
+      { k: '你的个人账户（每 100 元）', v: '+' + b.acctPer100.toFixed(2) + ' 元', s: '含公积金双边 ' + ((res.cfg.fundEmpBp + res.cfg.fundCoBp) / 100).toFixed(2) + ' 元' },
+      { k: '公司多掏（每 100 元）', v: '+' + b.companyPer100.toFixed(2) + ' 元', s: '公司的边际成本' },
+      { k: '你净得（每 100 元）', v: sgn(Math.round(b.netPer100 * 100)) + ' 元', s: '账户增 − 到手减' }
+    ];
+    $('perKpis').innerHTML = kpiHTML(perList);
+    const net = b.acctPer100 - b.takePer100;
+    $('perInsight').innerHTML = '每多缴 <b>100 元</b> 基数：你当月到手少 <b>' + b.takePer100.toFixed(2) + ' 元</b>，可你的个人账户里多 <b>' + b.acctPer100.toFixed(2) + ' 元</b>，' +
+      '净 <b>' + sgn(Math.round(net * 100)) + ' 元</b>。原因是公积金两边都由公司代缴、但<b>双边都进你自己的账户</b>：基数越大，往你账户里搬的钱越多，' +
+      '只是先从工资里扣走一小部分。' + (net > 0 ? '在这份费率表下，提基数对你是<b>净增益</b>——这解释了口径之争为什么总在「基数」上。' : '在这份费率表下，提基数对你是净损失（说明你的公积金比例或计入比例填得很低）。');
+  }
+
+  function renderLong(res) {
+    $('longTag').textContent = res.cfg.years + ' 年 · 年化 ' + res.ratePct + '%';
+    const longList = [
+      { k: '按申报基数缴，个人账户 ' + res.cfg.years + ' 年后', v: fmt(res.declaredFV) + ' 元', s: '每月 ' + fmt(res.declared.toAcct) + ' 元 × ' + res.months + ' 个月' },
+      { k: '足额缴，个人账户 ' + res.cfg.years + ' 年后', v: fmt(res.fullFV) + ' 元', s: '每月 ' + fmt(res.full.toAcct) + ' 元' },
+      { k: '两者相差', v: fmt(res.diffFV) + ' 元', s: '占足额路的 ' + pct1(res.fullFV ? res.diffFV / res.fullFV * 100 : 0) },
+      { k: '公司同期多掏', v: fmt(res.diff.companyTotal * res.months) + ' 元', s: '不含利率' }
+    ];
+    $('longKpis').innerHTML = kpiHTML(longList);
+
+    // 曲线
+    const W = 720, H = 260, padL = 54, padR = 12, padT = 12, padB = 28;
+    const ys = res.perYear;
+    const maxV = Math.max(1, ...ys.map((r) => Math.max(r.declaredBalance, r.fullBalance)));
+    const x = (i) => padL + (W - padL - padR) * (ys.length <= 1 ? 0 : i / (ys.length - 1));
+    const y = (v) => H - padB - (H - padT - padB) * (v / maxV);
+    const line = (key) => ys.map((r, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r[key]).toFixed(1)).join(' ');
+    let svg = '';
+    for (let g = 0; g <= 4; g++) {
+      const v = maxV * g / 4, yy = y(v);
+      svg += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="#e2e8f0"/>' +
+        '<text x="' + (padL - 6) + '" y="' + (yy + 3.5).toFixed(1) + '" font-size="10" fill="#7d8b9c" text-anchor="end">' + (v / 1e6).toFixed(1) + '万</text>';
+    }
+    svg += '<path d="' + line('fullBalance') + '" fill="none" stroke="#1d4ed8" stroke-width="2.5"/>';
+    svg += '<path d="' + line('declaredBalance') + '" fill="none" stroke="#94a3b8" stroke-width="2.5"/>';
+    [1, Math.round(ys.length / 2), ys.length].forEach((nth, k) => {
+      const i = nth - 1;
+      if (i < 0 || i >= ys.length) return;
+      const anchor = k === 0 ? 'start' : (k === 2 ? 'end' : 'middle');
+      svg += '<text x="' + x(i).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" fill="#7d8b9c" text-anchor="' + anchor + '">第 ' + ys[i].year + ' 年</text>';
+    });
+    $('chart').innerHTML = svg;
+
+    const step = 1;
+    let h = '<thead><tr><th>年末</th><th>按申报基数缴（元）</th><th>足额缴（元）</th><th>相差（元）</th></tr></thead><tbody>';
+    ys.forEach((r, i) => {
+      if (r.year % step !== 0 && i !== ys.length - 1) return;
+      h += '<tr><td>第 ' + r.year + ' 年</td><td>' + fmt(r.declaredBalance) + '</td><td>' + fmt(r.fullBalance) + '</td><td>' + fmt(r.fullBalance - r.declaredBalance) + '</td></tr>';
+    });
+    h += '</tbody>';
+    $('yearTable').innerHTML = h;
+  }
+
+  function renderTarget(res) {
+    const t = res.target;
+    const box = $('targetBox');
+    let h = '<div class="kpis">' + kpiHTML([
+      { k: '目标', v: fmt(t.targetCents) + ' 元', s: t.months + ' 个月后想多出这么多' },
+      { k: '需要的月账户增量', v: fmt(Math.round(t.neededMonthlyCents)) + ' 元/月', s: (t.ratePct ? '已按年化 ' + t.ratePct + '% 折现' : '利率为 0，直接是目标 ÷ 月数') },
+      { k: '需要的缴费基数', v: (t.reachable ? fmt(t.neededBaseCents) + ' 元' : '超过上限'), s: '当前 ' + fmt(res.cfg.base) + ' 元 / 上限 ' + fmt(t.cappedAt) + ' 元' },
+      { k: '回代残差', v: sgn(Math.round(t.residualCents)) + ' 元', s: '把解代回去再算一遍的差（每月账户增量只能精确到分）' }
+    ]) + '</div>';
+    h += t.reachable
+      ? '<div class="okbox">把基数提到 <b>' + fmt(t.appliedBaseCents) + ' 元</b>（' + (t.appliedBaseCents > res.cfg.base ? '比现在高 ' : '比现在低 ') + fmt(Math.abs(t.appliedBaseCents - res.cfg.base)) + ' 元），个人账户每月进 <b>' + fmt(t.afterAcctPerMonth) + ' 元</b>，' + t.months + ' 个月后是 <b>' + fmt(t.afterFV) + ' 元</b>，比按现在基数缴多 <b>' + fmt(t.afterFV - res.declaredFV) + ' 元</b>。' + (t.fullBaseCovers ? '注意：足额缴（' + fmt(res.bases.full) + ' 元）本来就能覆盖这个目标。' : '足额缴也达不到这个目标。') + '</div>'
+      : '<div class="warnbox">即使把基数顶到上限 <b>' + fmt(t.cappedAt) + ' 元</b>，这个目标也<b>达不到</b>（' + t.months + ' 个月后最多多出 ' + fmt(t.afterFV - res.declaredFV) + ' 元）。要么调低目标，要么把年限拉长——本页不会给你一个「做不到」的假数字。</div>';
+    box.innerHTML = h;
+  }
+
+  function renderSens(res) {
+    let h = '<thead><tr><th>条件</th><th>基数（元）</th><th>每月到手差（元）</th><th>每月账户差（元）</th><th>' + res.cfg.years + ' 年账户差（元）</th><th>公司月差（元）</th></tr></thead><tbody>';
+    res.sensitivity.forEach((s) => {
+      h += '<tr><td>' + esc(s.label) + '</td><td>' + fmt(s.baseCents) + '</td><td>' + sgn(Math.round(s.takeHomeDiff)) + '</td><td>' + sgn(Math.round(s.acctDiffMonthly)) + '</td><td>' + fmt(Math.round(s.acctDiffFV)) + '</td><td>' + fmt(Math.round(s.companyDiff)) + '</td></tr>';
+    });
+    h += '</tbody>';
+    $('sensTable').innerHTML = h;
+  }
+
+  function renderSteps(res) { $('steps').innerHTML = res.steps.map((s) => '<li>' + esc(s) + '</li>').join(''); }
+  function renderLimits(res) { $('limits').innerHTML = res.limits.map((s) => '<li>' + esc(s) + '</li>').join(''); }
+
+  function renderChecks() {
+    $('checks').innerHTML = state.checks.map((c) => '<li><span class="mark ' + (c.ok ? 'ok' : 'no') + '">' + (c.ok ? '✔' : '✖') + '</span><span>' + esc(c.name) + (c.detail ? ' <span class="d">（' + esc(c.detail) + '）</span>' : '') + '</span></li>').join('');
+  }
+
+  /* ── 导出 ─────────────────────────────────────────── */
+  function download(name, text, type) {
+    state.exportCount++;
+    const blob = new Blob([text], { type: type || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+  }
+
+  function csvText() {
+    const res = state.res, cfg = res.cfg;
+    const q = (s) => '"' + String(s).replace(/"/g, '""') + '"';
+    const L = [];
+    L.push(['缴费基数对账台 · 导出', '虚构示例口径，非任何地区政策'].map(q).join(','));
+    L.push(['口径', '月工资 ' + fmt(cfg.wage) + ' 元', '申报基数 ' + fmt(cfg.base) + ' 元', '下限 ' + fmt(cfg.floor), '上限 ' + fmt(cfg.cap), '公积金 ' + (cfg.fundEmpBp / 100) + '% / ' + (cfg.fundCoBp / 100) + '%', '年限 ' + cfg.years, '年化 ' + res.ratePct + '%'].map(q).join(','));
+    L.push('');
+    L.push(['五笔钱（按申报基数）'].map(q).join(','));
+    L.push(['项目', '个人缴(元)', '公司缴(元)', '进个人账户(元)', '进统筹(元)'].map(q).join(','));
+    res.declared.rows.forEach((r) => L.push([r.name, (r.personal / 100).toFixed(2), (r.company / 100).toFixed(2), (r.toAcct / 100).toFixed(2), (r.toPool / 100).toFixed(2)].map(q).join(',')));
+    L.push(['住房公积金', (res.declared.fundEmp / 100).toFixed(2), (res.declared.fundCo / 100).toFixed(2), ((res.declared.fundEmp + res.declared.fundCo) / 100).toFixed(2), '0.00'].map(q).join(','));
+    L.push(['合计', (res.declared.personalTotal / 100).toFixed(2), (res.declared.companyTotal / 100).toFixed(2), (res.declared.toAcct / 100).toFixed(2), (res.declared.toPool / 100).toFixed(2)].map(q).join(','));
+    L.push(['本月到手（未扣个税）', (res.declared.takeHome / 100).toFixed(2)].map(q).join(','));
+    L.push('');
+    L.push(['两条路对照'].map(q).join(','));
+    L.push(['项目', '按申报基数缴', '足额缴', '差额'].map(q).join(','));
+    L.push(['缴费基数(元)', (res.declared.baseCents / 100).toFixed(2), (res.full.baseCents / 100).toFixed(2), ((res.full.baseCents - res.declared.baseCents) / 100).toFixed(2)].map(q).join(','));
+    L.push(['个人缴费合计(元)', (res.declared.personalTotal / 100).toFixed(2), (res.full.personalTotal / 100).toFixed(2), ((res.full.personalTotal - res.declared.personalTotal) / 100).toFixed(2)].map(q).join(','));
+    L.push(['本月到手(元)', (res.declared.takeHome / 100).toFixed(2), (res.full.takeHome / 100).toFixed(2), (res.diff.takeHome / 100).toFixed(2)].map(q).join(','));
+    L.push(['进个人账户(元)', (res.declared.toAcct / 100).toFixed(2), (res.full.toAcct / 100).toFixed(2), (res.diff.toAcct / 100).toFixed(2)].map(q).join(','));
+    L.push(['进统筹(元)', (res.declared.toPool / 100).toFixed(2), (res.full.toPool / 100).toFixed(2), (res.diff.toPool / 100).toFixed(2)].map(q).join(','));
+    L.push(['公司缴费合计(元)', (res.declared.companyTotal / 100).toFixed(2), (res.full.companyTotal / 100).toFixed(2), (res.diff.companyTotal / 100).toFixed(2)].map(q).join(','));
+    L.push('');
+    L.push(['边际账（每 100 元基数）', '到手', '个人账户', '公司', '你净得'].map(q).join(','));
+    L.push(['元', (-res.perBase.takePer100).toFixed(2), res.perBase.acctPer100.toFixed(2), res.perBase.companyPer100.toFixed(2), (res.perBase.acctPer100 - res.perBase.takePer100).toFixed(2)].map(q).join(','));
+    L.push('');
+    L.push(['长期累积(年化 ' + res.ratePct + '%)'].map(q).join(','));
+    L.push(['年末', '按申报基数缴(元)', '足额缴(元)', '相差(元)'].map(q).join(','));
+    res.perYear.forEach((r) => L.push([r.year, (r.declaredBalance / 100).toFixed(2), (r.fullBalance / 100).toFixed(2), ((r.fullBalance - r.declaredBalance) / 100).toFixed(2)].map(q).join(',')));
+    L.push('');
+    L.push(['反推', '目标(元)', '需要月增量(元)', '需要基数(元)', '可达到', '回代残差(元)'].map(q).join(','));
+    L.push(['', (res.target.targetCents / 100).toFixed(2), (res.target.neededMonthlyCents / 100).toFixed(2), res.target.reachable ? (res.target.neededBaseCents / 100).toFixed(2) : '超过上限', res.target.reachable ? '是' : '否', (res.target.residualCents / 100).toFixed(2)].map(q).join(','));
+    L.push('');
+    L.push(['敏感性'].map(q).join(','));
+    L.push(['条件', '基数(元)', '到手差(元)', '账户月差(元)', '账户' + res.cfg.years + '年差(元)', '公司月差(元)'].map(q).join(','));
+    res.sensitivity.forEach((s) => L.push([s.label, (s.baseCents / 100).toFixed(2), (s.takeHomeDiff / 100).toFixed(2), (s.acctDiffMonthly / 100).toFixed(2), (s.acctDiffFV / 100).toFixed(2), (s.companyDiff / 100).toFixed(2)].map(q).join(',')));
+    return '\ufeff' + L.join('\r\n') + '\r\n';
+  }
+
+  function mdText() {
+    const res = state.res, cfg = res.cfg, d = res.diff;
+    const L = [];
+    L.push('# 缴费基数对账台 · 导出');
+    L.push('');
+    L.push('> 口径：月工资 ' + fmt(cfg.wage) + ' 元 / 申报基数 ' + fmt(cfg.base) + ' 元 / 下限 ' + fmt(cfg.floor) + ' / 上限 ' + fmt(cfg.cap) + ' / 公积金 ' + (cfg.fundEmpBp / 100) + '% 与 ' + (cfg.fundCoBp / 100) + '% / ' + cfg.years + ' 年 / 年化 ' + res.ratePct + '%。默认与内置场景都是**虚构示例**，不是任何地区或年份的政策数值。');
+    L.push('');
+    L.push('## 结论');
+    L.push('');
+    L.push('按申报基数 ' + fmt(res.bases.declared) + ' 元 缴，而不是按足额 ' + fmt(res.bases.full) + ' 元 缴：本月到手 ' + (d.takeHome >= 0 ? '多' : '少') + ' ' + fmt(Math.abs(d.takeHome)) + ' 元，个人账户每月 ' + (d.toAcct >= 0 ? '多' : '少') + ' ' + fmt(Math.abs(d.toAcct)) + ' 元；' + res.months + ' 个月后个人账户相差 ' + fmt(Math.abs(res.diffFV)) + ' 元。');
+    L.push('');
+    L.push('## 五笔钱（按申报基数，每月）');
+    L.push('');
+    L.push('| 项目 | 个人缴 | 公司缴 | 进你个人账户 | 进统筹 |');
+    L.push('|---|---:|---:|---:|---:|');
+    res.declared.rows.forEach((r) => L.push('| ' + r.name + ' | ' + fmt(r.personal) + ' | ' + fmt(r.company) + ' | ' + fmt(r.toAcct) + ' | ' + fmt(r.toPool) + ' |'));
+    L.push('| 住房公积金 | ' + fmt(res.declared.fundEmp) + ' | ' + fmt(res.declared.fundCo) + ' | ' + fmt(res.declared.fundEmp + res.declared.fundCo) + ' | 0.00 |');
+    L.push('| **合计** | **' + fmt(res.declared.personalTotal) + '** | **' + fmt(res.declared.companyTotal) + '** | **' + fmt(res.declared.toAcct) + '** | **' + fmt(res.declared.toPool) + '** |');
+    L.push('');
+    L.push('- 本月到手（月工资 − 个人缴合计，未扣个税）：**' + fmt(res.declared.takeHome) + ' 元**');
+    L.push('- 本月进你个人账户：**' + fmt(res.declared.toAcct) + ' 元**；本月进统筹：**' + fmt(res.declared.toPool) + ' 元**');
+    L.push('- 公司本月为你缴：**' + fmt(res.declared.companyTotal) + ' 元**；用人现金成本 **' + fmt(res.declared.companyCashCost) + ' 元**');
+    L.push('');
+    L.push('## 边际账（每多缴 100 元基数）');
+    L.push('');
+    L.push('- 你到手 **−' + res.perBase.takePer100.toFixed(2) + ' 元**');
+    L.push('- 你个人账户 **+' + res.perBase.acctPer100.toFixed(2) + ' 元**（含公积金双边）');
+    L.push('- 公司多掏 **+' + res.perBase.companyPer100.toFixed(2) + ' 元**');
+    L.push('- 你净得 **' + (res.perBase.acctPer100 - res.perBase.takePer100 >= 0 ? '+' : '−') + Math.abs(res.perBase.acctPer100 - res.perBase.takePer100).toFixed(2) + ' 元**');
+    L.push('');
+    L.push('## 长期累积（' + cfg.years + ' 年，年化 ' + res.ratePct + '%）');
+    L.push('');
+    L.push('| 年末 | 按申报基数缴 | 足额缴 | 相差 |');
+    L.push('|---|---:|---:|---:|');
+    const step = res.perYear.length > 20 ? 5 : 1;
+    res.perYear.forEach((r, i) => { if (r.year % step === 0 || i === res.perYear.length - 1) L.push('| 第 ' + r.year + ' 年 | ' + fmt(r.declaredBalance) + ' | ' + fmt(r.fullBalance) + ' | ' + fmt(r.fullBalance - r.declaredBalance) + ' |'); });
+    L.push('');
+    L.push('## 反推');
+    L.push('');
+    if (res.target.reachable) {
+      L.push('想让个人账户 ' + res.target.months + ' 个月后多出 ' + fmt(res.target.targetCents) + ' 元，需要把基数提到 **' + fmt(res.target.appliedBaseCents) + ' 元**（当前 ' + fmt(cfg.base) + ' 元）；回代残差 ' + sgn(Math.round(res.target.residualCents)) + ' 元。');
+    } else {
+      L.push('即使把基数顶到上限 ' + fmt(res.target.cappedAt) + ' 元，目标 ' + fmt(res.target.targetCents) + ' 元也**达不到**（最多多出 ' + fmt(res.target.afterFV - res.declaredFV) + ' 元）。');
+    }
+    L.push('');
+    L.push('## 敏感性（每一行都完整重算）');
+    L.push('');
+    L.push('| 条件 | 基数(元) | 每月到手差 | 每月账户差 | ' + cfg.years + ' 年账户差 | 公司月差 |');
+    L.push('|---|---:|---:|---:|---:|---:|');
+    res.sensitivity.forEach((s) => L.push('| ' + s.label + ' | ' + fmt(s.baseCents) + ' | ' + fmt(s.takeHomeDiff) + ' | ' + fmt(s.acctDiffMonthly) + ' | ' + fmt(s.acctDiffFV) + ' | ' + fmt(s.companyDiff) + ' |'));
+    L.push('');
+    L.push('## 这份账不算什么');
+    L.push('');
+    res.limits.forEach((s) => L.push('- ' + s));
+    L.push('');
+    L.push('结构自检：' + state.checks.filter((c) => c.ok).length + ' / ' + state.checks.length + ' 项通过。');
+    return L.join('\n') + '\n';
+  }
+
+  function jsonBackup() {
+    return JSON.stringify({
+      app: 'contribution-base', version: 1,
+      savedAt: new Date().toISOString(),
+      input: readInput(),
+      anchors: {
+        declaredBase: state.res.bases.declared, fullBase: state.res.bases.full,
+        takeHome: state.res.declared.takeHome, toAcct: state.res.declared.toAcct,
+        toPool: state.res.declared.toPool, companyTotal: state.res.declared.companyTotal,
+        diffTakeHome: state.res.diff.takeHome, diffToAcct: state.res.diff.toAcct,
+        diffFV: state.res.diffFV, months: state.res.months
+      }
+    }, null, 2);
+  }
+
+  /* ── 结果卡 PNG（1080×1350） ─────────────────────── */
+  function pngCard() {
+    const res = state.res;
+    const W = 1080, H = 1350;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const F = (w, sz) => w + ' ' + sz + 'px "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+    g.fillStyle = '#f4f6f9'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#1d4ed8'; g.fillRect(0, 0, W, 12);
+    g.fillStyle = '#16202c'; g.font = F(700, 50); g.fillText('缴费基数对账台', 72, 104);
+    g.fillStyle = '#4a5a6e'; g.font = F(400, 25);
+    g.fillText('公司按低基数缴，你亏在哪：五笔钱 + ' + res.cfg.years + ' 年账户差', 72, 146);
+
+    /* 结论 182–332 */
+    g.fillStyle = '#eef2ff'; g.fillRect(72, 182, W - 144, 150);
+    g.fillStyle = '#16202c'; g.font = F(500, 29);
+    g.fillText('按 ' + fmt(res.bases.declared) + ' 元 缴（不是足额 ' + fmt(res.bases.full) + ' 元）：', 96, 226);
+    g.font = F(700, 33);
+    g.fillStyle = '#1d4ed8';
+    g.fillText('本月到手 ' + (res.diff.takeHome <= 0 ? '多' : '少') + ' ' + fmt(Math.abs(res.diff.takeHome)) + ' 元', 96, 272);
+    g.fillStyle = '#b42318';
+    g.fillText('个人账户每月 ' + (res.diff.toAcct >= 0 ? '少' : '多') + ' ' + fmt(Math.abs(res.diff.toAcct)) + ' 元', 96, 316);
+
+    /* 四个 KPI */
+    const kpi = [
+      ['本月到手（未扣个税）', fmt(res.declared.takeHome) + ' 元'],
+      ['本月进你个人账户', fmt(res.declared.toAcct) + ' 元'],
+      ['本月进统筹', fmt(res.declared.toPool) + ' 元'],
+      [res.cfg.years + ' 年账户差', fmt(Math.abs(res.diffFV)) + ' 元']
+    ];
+    kpi.forEach((x, i) => {
+      const px = 72 + (i % 2) * 476, py = 352 + Math.floor(i / 2) * 126;
+      g.fillStyle = '#fff'; g.fillRect(px, py, 452, 118);
+      g.strokeStyle = '#e2e8f0'; g.strokeRect(px, py, 452, 118);
+      g.fillStyle = '#4a5a6e'; g.font = F(400, 23); g.fillText(x[0], px + 24, py + 40);
+      g.fillStyle = '#16202c'; g.font = F(700, 36); g.fillText(x[1], px + 24, py + 90);
+    });
+
+    /* 五笔钱表 */
+    g.fillStyle = '#16202c'; g.font = F(700, 31); g.fillText('五笔钱（每月）', 72, 640);
+    const cols = [72, 372, 552, 762, 962];
+    g.font = F(400, 21); g.fillStyle = '#7d8b9c';
+    ['项目', '个人缴', '公司缴', '进你账户', '进统筹'].forEach((t, i) => g.fillText(t, cols[i], 674));
+    g.strokeStyle = '#e2e8f0'; g.beginPath(); g.moveTo(72, 686); g.lineTo(W - 72, 686); g.stroke();
+    let yy = 716;
+    const rowsT = res.declared.rows.map((r) => [r.name, fmt(r.personal), fmt(r.company), fmt(r.toAcct), fmt(r.toPool)]);
+    rowsT.push(['住房公积金', fmt(res.declared.fundEmp), fmt(res.declared.fundCo), fmt(res.declared.fundEmp + res.declared.fundCo), '0.00']);
+    rowsT.push(['合计', fmt(res.declared.personalTotal), fmt(res.declared.companyTotal), fmt(res.declared.toAcct), fmt(res.declared.toPool)]);
+    rowsT.forEach((r, ri) => {
+      g.font = F(ri === rowsT.length - 1 ? 700 : 400, 23);
+      g.fillStyle = ri === rowsT.length - 1 ? '#16202c' : '#34455a';
+      r.forEach((t, ci) => g.fillText(t, cols[ci], yy));
+      yy += 32;
+    });
+
+    /* 边际账 940–1052 */
+    g.fillStyle = '#e8f6ef'; g.fillRect(72, 940, W - 144, 112);
+    g.fillStyle = '#0f7b52'; g.font = F(700, 26);
+    g.fillText('每多缴 100 元基数：到手 −' + res.perBase.takePer100.toFixed(2) + ' 元，个人账户 +' + res.perBase.acctPer100.toFixed(2) + ' 元', 96, 982);
+    g.font = F(400, 23); g.fillStyle = '#16202c';
+    g.fillText('净得 ' + (res.perBase.acctPer100 - res.perBase.takePer100 >= 0 ? '+' : '−') + Math.abs(res.perBase.acctPer100 - res.perBase.takePer100).toFixed(2) + ' 元 / 100 元基数（公积金双边都进你的账户）', 96, 1024);
+
+    /* 反推 */
+    g.fillStyle = '#16202c'; g.font = F(700, 29); g.fillText('反推', 72, 1084);
+    g.font = F(400, 24); g.fillStyle = '#34455a';
+    if (res.target.reachable) {
+      g.fillText('想让账户 ' + res.target.months + ' 个月后多出 ' + fmt(res.target.targetCents) + ' 元 → 把基数提到 ' + fmt(res.target.appliedBaseCents) + ' 元', 72, 1122);
+      g.fillText('（当前 ' + fmt(res.bases.declared) + ' 元；回代残差 ' + sgn(Math.round(res.target.residualCents)) + ' 元）', 72, 1156);
+    } else {
+      g.fillText('目标 ' + fmt(res.target.targetCents) + ' 元 即使顶到上限 ' + fmt(res.target.cappedAt) + ' 元 也达不到', 72, 1122);
+      g.fillText('（最多多出 ' + fmt(res.target.afterFV - res.declaredFV) + ' 元）', 72, 1156);
+    }
+
+    /* 页脚 */
+    g.fillStyle = '#e2e8f0'; g.fillRect(72, 1200, W - 144, 1);
+    g.fillStyle = '#7d8b9c'; g.font = F(400, 21);
+    g.fillText('月工资 ' + fmt(res.cfg.wage) + ' 元 / 申报基数 ' + fmt(res.bases.declared) + ' 元 / 下限 ' + fmt(res.cfg.floor) + ' / 上限 ' + fmt(res.cfg.cap), 72, 1236);
+    g.fillText('公积金 ' + (res.cfg.fundEmpBp / 100) + '% 与 ' + (res.cfg.fundCoBp / 100) + '% / ' + res.cfg.years + ' 年 / 年化 ' + res.ratePct + '% ｜ 「到手」未扣个税', 72, 1266);
+    g.fillText('虚构示例口径，不是任何地区政策 · 不做合规判断 · 不联网', 72, 1296);
+
+    const name = '缴费基数对账台-结果卡-' + (res.bases.declared / 100) + '.png';
+    cv.toBlob((b) => {
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url; a.download = name; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+      state.exportCount++;
+    }, 'image/png');
+  }
+
+  /* ── 本机保存 / 导入 ─────────────────────────────── */
+  function saveLocal() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(readInput()));
+      $('saveState').textContent = '已保存到本机（' + new Date().toLocaleTimeString('zh-CN') + '）。只存在这个浏览器里。';
+      toast('已保存到本机');
+    } catch (e) { $('saveState').textContent = '这台浏览器不允许本机保存（可能是隐私模式）。'; }
+  }
+
+  function loadLocal(silent) {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) { if (!silent) toast('本机还没有保存过'); return false; }
+      writeInput(JSON.parse(raw));
+      if (!silent) toast('已读取上次保存的输入');
+      return true;
+    } catch (e) { if (!silent) toast('本机保存的内容读不出来'); return false; }
+  }
+
+  function importBackup(file) {
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        const o = JSON.parse(String(fr.result));
+        if (!o || o.app !== 'contribution-base' || !o.input) { toast('这不是本页的备份文件'); return; }
+        writeInput(o.input);
+        compute();
+        toast('已导入备份并重算');
+      } catch (e) { toast('备份文件解析失败'); }
+    };
+    fr.readAsText(file);
+  }
+
+  /* ── 事件绑定与启动 ─────────────────────────────── */
+  function bind() {
+    const form = $('form');
+    form.addEventListener('input', (e) => { if (e.target.matches('input[type=text]')) compute(); });
+    form.addEventListener('change', () => compute());
+    $('rows').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-del]');
+      if (!b) return;
+      const cur = readInput();
+      if (cur.rows.length <= 1) { toast('至少保留一行'); return; }
+      cur.rows.splice(Number(b.dataset.del), 1);
+      writeInput(cur); compute();
+    });
+    $('btnAddRow').addEventListener('click', () => {
+      const cur = readInput();
+      if (cur.rows.length >= C.MAX_ROWS) { toast('最多 ' + C.MAX_ROWS + ' 行'); return; }
+      cur.rows.push({ name: '新险种', rp: '0', rc: '0', ap: '0', ac: '0' });
+      writeInput(cur); compute();
+    });
+    $('btnReset').addEventListener('click', () => { writeInput(C.defaultsClone()); $('scenario').value = 'default'; compute(); toast('已恢复默认示例'); });
+    $('btnSave').addEventListener('click', saveLocal);
+    $('btnLoad').addEventListener('click', () => { if (loadLocal(false)) compute(); });
+    $('scenario').addEventListener('change', (e) => {
+      const sc = C.scenarios.find((s) => s.key === e.target.value);
+      if (!sc) return;
+      writeInput(Object.assign(C.defaultsClone(), sc.patch));
+      compute(); toast('已套用场景：' + sc.label);
+    });
+    $('btnCsv').addEventListener('click', () => { download('缴费基数对账台.csv', csvText(), 'text/csv;charset=utf-8'); toast('CSV 已导出'); });
+    $('btnMd').addEventListener('click', () => { download('缴费基数对账台.md', mdText(), 'text/markdown;charset=utf-8'); toast('Markdown 已导出'); });
+    $('btnJson').addEventListener('click', () => { download('缴费基数对账台-备份.json', jsonBackup(), 'application/json'); toast('JSON 备份已导出'); });
+    $('btnPng').addEventListener('click', () => { pngCard(); toast('结果卡 PNG 正在生成'); });
+    $('btnPrint').addEventListener('click', () => window.print());
+    $('importFile').addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]); });
+    window.addEventListener('error', () => {});
+  }
+
+  function boot() {
+    $('scenario').innerHTML = C.scenarios.map((s) => '<option value="' + s.key + '">' + esc(s.label) + '</option>').join('');
+    writeInput(C.defaultsClone());
+    bind();
+    loadLocal(true);
+    compute();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+</script>
+</body>
+</html>

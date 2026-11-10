@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>缴费基数对账台 · 按低基数缴，你到底亏在哪</title>
+<meta name="description" content="把「公司按低基数缴社保公积金」拆成五笔钱：本月到手、进你个人账户、进统筹、公司成本，以及长期累积与反推。金额与费率全部自己填，页面不联网。">
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#fff; --ink:#16202c; --ink2:#4a5a6e; --ink3:#7d8b9c;
+    --line:#e2e8f0; --line2:#cbd5e1; --brand:#1d4ed8; --brand2:#eef2ff;
+    --good:#0f7b52; --goodbg:#e8f6ef; --warn:#9a5b00; --warnbg:#fff5e5; --bad:#b42318; --badbg:#fdeceb;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .app{max-width:1240px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:392px minmax(0,1fr);gap:18px;align-items:start}
+  .app > *{min-width:0}
+  header.top{grid-column:1/-1;padding:4px 2px 0}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);max-width:820px}
+  .badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h3{margin:16px 0 8px;font-size:14px;color:var(--ink2)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--brand2);color:var(--brand);border:1px solid #dbe4ff}
+  .tag.gray{background:#f1f5f9;color:var(--ink2);border-color:var(--line2)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-size:14px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #c7d2fe;border-color:var(--brand)}
+  input.bad{border-color:var(--bad);background:var(--badbg)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg label{font-size:13px;padding:6px 10px;border:1px solid var(--line2);border-radius:999px;background:#fff;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .seg input{margin:0}
+  .seg label.on{background:var(--brand2);border-color:#c7d2fe;color:var(--brand);font-weight:600}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:#f8fafc}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  button.primary:hover{background:#1a45c0}
+  button.tiny{font-size:12px;padding:4px 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .footnote{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--ink2);font-weight:600;background:#fafbfd;text-align:right;font-size:12px}
+  th:first-child,td:first-child{text-align:left;white-space:normal}
+  table.calc th:nth-child(2),table.calc td:nth-child(2){text-align:left;white-space:normal;color:var(--ink3);font-size:12px}
+  tr.sum td{font-weight:700;background:#f8fafc}
+  tr.diff td{color:var(--brand);font-weight:700}
+  .tw{overflow-x:auto;max-width:100%}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .kpi{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+  .kpi .k{font-size:12px;color:var(--ink2);margin-bottom:2px}
+  .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.2px}
+  .kpi .s{font-size:11px;color:var(--ink3)}
+  .headline{font-size:17px;line-height:1.75;background:var(--brand2);border:1px solid #dbe4ff;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+  .headline b{color:var(--brand)}
+  .insight{margin-top:12px;background:var(--goodbg);border:1px solid #bfe6d5;border-radius:10px;padding:11px 13px;font-size:14px}
+  .insight b{color:var(--good)}
+  .warnbox{background:var(--warnbg);border:1px solid #f2d9a8;color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+  .errbox{background:var(--badbg);border:1px solid #f5c6c2;color:var(--bad);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+  .errbox ul,.warnbox ul{margin:6px 0 0;padding-left:18px}
+  .okbox{background:var(--goodbg);border:1px solid #bfe6d5;color:var(--good);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:10px}
+  .checks{list-style:none;margin:0;padding:0;font-size:13px}
+  .checks li{padding:5px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px;align-items:flex-start}
+  .checks .mark{flex:0 0 auto;font-weight:700}
+  .checks .ok{color:var(--good)}
+  .checks .no{color:var(--bad)}
+  .checks .d{color:var(--ink3);font-size:12px}
+  .limits{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
+  .limits li{margin-bottom:6px}
+  .steps{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
+  .steps li{margin-bottom:6px}
+  .rowline{display:grid;grid-template-columns:1.1fr repeat(4,1fr) auto;gap:6px;align-items:center;margin-bottom:6px}
+  .rowline input{font-size:13px;padding:6px 8px}
+  .rowline .cell{display:block;min-width:0}
+  .rowline .lb{display:none}
+  .rowhead{display:grid;grid-template-columns:1.1fr repeat(4,1fr) auto;gap:6px;font-size:11px;color:var(--ink3);margin-bottom:4px}
+  .rowhead div{text-align:center}
+  .rowhead div:first-child{text-align:left}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#16202c;color:#fff;font-size:13px;padding:9px 15px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .18s}
+  .toast.on{opacity:.94}
+  .chart{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:6px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+  .mono{font-variant-numeric:tabular-nums}
+  @media (max-width:980px){
+    .app{grid-template-columns:minmax(0,1fr);padding:16px 12px 50px}
+    h1{font-size:22px}
+  }
+  @media (max-width:620px){
+    .row2{grid-template-columns:minmax(0,1fr)}
+    .kpis{grid-template-columns:minmax(0,1fr)}
+    .rowline{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-auto-rows:auto;border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:10px}
+    .rowline .cell.name{grid-column:1/-1}
+    .rowline .lb{display:block;font-size:11px;color:var(--ink3);margin-bottom:2px}
+    .rowline button{justify-self:start}
+    .rowhead{display:none}
+    .kpi .v{font-size:18px}
+    .card{padding:14px 12px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>缴费基数对账台</h1>
+    <p class="lede">公司按「最低基数」缴社保公积金，你当月到手是多了还是少了？把一个月工资填进去，看这五笔钱：本月到手、进你个人账户的钱、进统筹的钱、公司为你掏的钱，以及 20 年后账户里差多少。</p>
+    <div class="badges">
+      <span class="badge">不联网 · 不上传</span>
+      <span class="badge">金额与费率全部自己填</span>
+      <span class="badge">默认值是虚构示例，不是任何地区政策</span>
+      <span class="badge">不做合规判断 · 不给维权建议</span>
+    </div>
+  </header>
+
+  <form class="card" id="form" autocomplete="off">
+    <h2>① 填你的口径<span class="tag gray">元 / %</span></h2>
+
+    <div class="row2">
+      <div class="field"><label>月工资（应发）<span class="sub">元</span></label><input type="text" id="wage" inputmode="decimal"></div>
+      <div class="field"><label>公司申报的缴费基数<span class="sub">元</span></label><input type="text" id="base" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>基数下限<span class="sub">元</span></label><input type="text" id="floor" inputmode="decimal"></div>
+      <div class="field"><label>基数上限<span class="sub">元</span></label><input type="text" id="cap" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>公积金 个人比例<span class="sub">%</span></label><input type="text" id="fundEmp" inputmode="decimal"></div>
+      <div class="field"><label>公积金 公司比例<span class="sub">%</span></label><input type="text" id="fundCo" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>累积年限<span class="sub">1–40 年</span></label><input type="text" id="years" inputmode="numeric"></div>
+      <div class="field"><label>个人账户年化记账利率<span class="sub">%</span></label><input type="text" id="rate" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label>反推目标：N 年后个人账户想多出多少<span class="sub">元</span></label><input type="text" id="target" inputmode="decimal"></div>
+
+    <h3>险种与费率 <span class="sub" style="font-weight:400;color:var(--ink3)">「计入个人账户」＝这笔缴费有多少比例进你自己的账户，余额进统筹</span></h3>
+    <div class="rowhead"><div>险种</div><div>个人%</div><div>公司%</div><div>个人计入%</div><div>公司计入%</div><div></div></div>
+    <div id="rows"></div>
+    <div class="btns">
+      <button type="button" class="tiny" id="btnAddRow">+ 添加一行</button>
+      <span class="footnote" id="rowNote" style="margin:0"></span>
+    </div>
+
+    <h3>操作</h3>
+    <div class="field"><label>内置场景（全部为虚构示例）</label><select id="scenario"></select></div>
+    <div class="btns">
+      <button type="button" class="primary" id="btnReset">恢复默认</button>
+      <button type="button" id="btnSave">保存到本机</button>
+      <button type="button" id="btnLoad">读取上次</button>
+    </div>
+    <div class="footnote" id="saveState">本机保存只存在这个浏览器里，不会上传。页面不联网。</div>
+  </form>
+
+  <main>
+    <div id="errors"></div>
+
+    <section class="card" id="resHeadline">
+      <h2>② 结论<span class="tag" id="baseTag">按 4000 缴</span></h2>
+      <div class="headline" id="headline"></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="insight" id="insight"></div>
+      <div class="btns" style="margin-top:12px" id="actions"></div>
+    </section>
+
+    <section class="card">
+      <h2>③ 五笔钱<span class="tag gray">每月</span></h2>
+      <div class="tw"><table id="splitTable"></table></div>
+      <div class="footnote">「进你个人账户」＝ 养老与医保的个人缴费按计入比例进个人账户的部分 ＋ 公司缴费按计入比例进个人账户的部分 ＋ 公积金双边全额。余额进统筹，不进你的个人账户。</div>
+    </section>
+
+    <section class="card">
+      <h2>④ 两条路对照<span class="tag gray">足额缴 vs 申报基数</span></h2>
+      <div class="tw"><table id="pathTable"></table></div>
+      <div class="footnote" id="pathNote"></div>
+    </section>
+
+    <section class="card">
+      <h2>⑤ 每多缴 100 元基数<span class="tag">边际账</span></h2>
+      <div class="kpis" id="perKpis"></div>
+      <div class="insight" id="perInsight"></div>
+      <div class="footnote">边际账是解析值：把每个险种的费率与计入比例加起来，不依赖上面的基数大小。因此它不受四舍五入影响，可以和明细表互相印证。</div>
+    </section>
+
+    <section class="card">
+      <h2>⑥ 长期累积<span class="tag gray" id="longTag"></span></h2>
+      <div class="kpis" id="longKpis"></div>
+      <svg class="chart" id="chart" viewBox="0 0 720 260" role="img" aria-label="两条路的个人账户累积曲线"></svg>
+      <div class="legend"><span><i style="background:#1d4ed8"></i>足额缴</span><span><i style="background:#94a3b8"></i>按申报基数缴</span></div>
+      <div class="tw" style="margin-top:12px;max-height:320px;overflow-y:auto"><table id="yearTable"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>⑦ 反推<span class="tag gray">要提多少基数</span></h2>
+      <div id="targetBox"></div>
+    </section>
+
+    <section class="card">
+      <h2>⑧ 敏感性<span class="tag gray">每行都完整重算</span></h2>
+      <div class="tw"><table id="sensTable"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>⑨ 计算步骤</h2>
+      <ol class="steps" id="steps"></ol>
+    </section>
+
+    <section class="card">
+      <h2>⑩ 结构自检<span class="tag gray">每次重算都跑</span></h2>
+      <ul class="checks" id="checks"></ul>
+    </section>
+
+    <section class="card">
+      <h2>⑪ 这份账不算什么</h2>
+      <ul class="limits" id="limits"></ul>
+    </section>
+
+    <section class="card">
+      <h2>⑫ 导出</h2>
+      <div class="btns">
+        <button type="button" class="primary" id="btnCsv">CSV</button>
+        <button type="button" id="btnMd">Markdown</button>
+        <button type="button" id="btnJson">JSON 备份</button>
+        <button type="button" id="btnPng">结果卡 PNG</button>
+        <button type="button" id="btnPrint">打印</button>
+      </div>
+      <div class="footnote">CSV / Markdown / 结果卡 PNG 是给人看的；JSON 备份可以再用下面的「选择文件」导入回来，输入与锚点会一起恢复。导出的每个数字都来自同一次已验算的结果。</div>
+      <div class="btns" style="margin-top:10px">
+        <input type="file" id="importFile" accept=".json,application/json" style="font-size:12px">
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/*CORE*/
+</script>
+<script>
+/*UI*/
+</script>
+</body>
+</html>
